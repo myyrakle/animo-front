@@ -3,6 +3,8 @@ import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
 import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
+import sveltePreprocess from 'svelte-preprocess';
+import typescript from '@rollup/plugin-typescript';
 import css from 'rollup-plugin-css-only';
 
 const production = !process.env.ROLLUP_WATCH;
@@ -28,8 +30,30 @@ function serve() {
 	};
 }
 
+const smelte = require("smelte/rollup-plugin-smelte");
+const smeltePlugin = smelte({ 
+    purge: production,
+    output: "public/global.css", // it defaults to static/global.css which is probably what you expect in Sapper 
+    postcss: [], // Your PostCSS plugins
+    whitelist: [], // Array of classnames whitelisted from purging
+    whitelistPatterns: [], // Same as above, but list of regexes
+    tailwind: { 
+      colors: { 
+        primary: "#b027b0",
+        secondary: "#009688",
+        error: "#f44336",
+        success: "#4caf50",
+        alert: "#ff9800",
+        blue: "#2196f3",
+        dark: "#212121" 
+      }, // Object of colors to generate a palette from, and then all the utility classes
+      darkMode: true, 
+    }, 
+    // Any other props will be applied on top of default Smelte tailwind.config.js
+  });
+
 export default {
-	input: 'src/main.js',
+	input: 'src/main.ts',
 	output: {
 		sourcemap: true,
 		format: 'iife',
@@ -38,6 +62,7 @@ export default {
 	},
 	plugins: [
 		svelte({
+			preprocess: sveltePreprocess(),
 			compilerOptions: {
 				// enable run-time checks when not in production
 				dev: !production
@@ -57,6 +82,10 @@ export default {
 			dedupe: ['svelte']
 		}),
 		commonjs(),
+		typescript({
+			sourceMap: !production,
+			inlineSources: !production
+		}),
 
 		// In dev mode, call `npm run start` once
 		// the bundle has been generated
@@ -68,7 +97,9 @@ export default {
 
 		// If we're building for production (npm run build
 		// instead of npm run dev), minify
-		production && terser()
+		production && terser(),
+
+		smeltePlugin,
 	],
 	watch: {
 		clearScreen: false
